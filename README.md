@@ -7,5 +7,5 @@ Usage:
 1. Clone/Download repository
 2. Open terminal
 3. Go to project folder `cd [REPOSITORY FOLDER]`
-4. Execute `chmod u+x ./export.sh && ./export.sh`
+4. Execute `bash ./export.sh`
 5. Next time it's possible just to run `npm start` command
