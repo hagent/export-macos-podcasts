@@ -84,7 +84,8 @@ async function getMP3MetaTitle(path) {
 
 async function getPodcastsCacheMP3Files(cacheFilesPath) {
   try {
-    return await fs.readdir(cacheFilesPath);
+    const podcastFiles = await fs.readdir(cacheFilesPath);
+    return podcastFiles.filter((f) => f.includes(".mp3"));
   } catch (e) {
     throw new Error(`Could not find mp3 files in podcasts cache folder either there are no downloaded podcasts or something changed in podcasts app
 original error: ${e}`);
@@ -93,8 +94,7 @@ original error: ${e}`);
 
 async function exportPodcasts(podcastsDBData) {
   const cacheFilesPath = await getPodcastsCacheFilesPath();
-  const podcastFiles = await getPodcastsCacheMP3Files(cacheFilesPath);
-  const podcastMP3Files = podcastFiles.filter((f) => f.includes(".mp3"));
+  const podcastMP3Files = await getPodcastsCacheMP3Files(cacheFilesPath);
   const filesWithDBData = podcastMP3Files.map((fileName) => {
     const uuid = fileName.replace(".mp3", "");
     const dbMeta = podcastsDBData.find((m) => m.zuuid === uuid);
@@ -122,8 +122,6 @@ async function exportPodcasts(podcastsDBData) {
   console.log(`\n\nSuccessful Export to '${outputDir}' folder!`);
   exec(`open ${outputDir}`);
 }
-
-
 
 async function main() {
   const dbPodcastData = await tryGetDBPodcastsData();
