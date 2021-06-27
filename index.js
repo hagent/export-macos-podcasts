@@ -28,7 +28,7 @@ async function getPodcastsBasePath() {
     );
     if (!podcastsAppFolder) {
       throw new Error(
-        `Could not find podcasis app folder in ${groupContainersFolder}`
+        `Could not find podcasts app folder in ${groupContainersFolder}`
       );
     }
     return `${process.env.HOME}/Library/Group Containers/${podcastsAppFolder}`;
@@ -48,23 +48,29 @@ async function getPodcastsCacheFilesPath() {
 }
 
 async function getDBPodcastsData() {
-  try {
-    const dbOrigin = new sqlite3.Database(await getPodcastsDBPath());
-    const db = {
-      serialize: promisify(dbOrigin.serialize).bind(dbOrigin),
-      all: promisify(dbOrigin.all).bind(dbOrigin),
-      close: promisify(dbOrigin.close).bind(dbOrigin),
-    };
+  const dbOrigin = new sqlite3.Database(await getPodcastsDBPath());
+  const db = {
+    serialize: promisify(dbOrigin.serialize).bind(dbOrigin),
+    all: promisify(dbOrigin.all).bind(dbOrigin),
+    close: promisify(dbOrigin.close).bind(dbOrigin),
+  };
 
+  try {
     await db.serialize();
     return await db.all(podcastSelectSQL);
-  } catch (error) {
-    console.error("Could not fetch data from podcasts database:", error);
-    return [];
   } finally {
     try {
       db.close();
     } catch {}
+  }
+}
+
+async function tryGetDBPodcastsData() {
+  try {
+    return await getDBPodcastsData();
+  } catch (error) {
+    console.error("Could not fetch data from podcasts database:", error);
+    return [];
   }
 }
 
@@ -106,7 +112,7 @@ async function exportPodcasts(podcastsDBData) {
 }
 
 async function main() {
-  const dbPodcastData = await getDBPodcastsData();
+  const dbPodcastData = await tryGetDBPodcastsData();
   await exportPodcasts(dbPodcastData);
 }
 
