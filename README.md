@@ -4,6 +4,10 @@ Since mac os 11.4 apple official podcasts app doesn't allow to drag and drop dow
 Requirements: Node.js version >= 14 https://nodejs.org/en/download/
 
 Usage:
+1. Open terminal app
+2. Execute `npx github:hagent/export-macos-podcasts` command
+
+Alternatively you can clone repository:
 1. Clone/Download repository (unarchive it if it was archived)
 2. Open terminal at downloaded folder (context click on folder -> services -> New Terminal at folder or just open Terminal app and execute `cd [REPOSITORY FOLDER]`)
 3. Execute `bash ./export.sh`

@@ -11,5 +11,8 @@
   "dependencies": {
     "music-metadata": "^7.8.7",
     "sqlite3": "^5.0.2"
+  },
+  "bin": {
+    "export-macos-podcasts": "exportNPX.js"
   }
 }
