@@ -74,9 +74,9 @@ async function tryGetDBPodcastsData() {
   }
 }
 
-async function getMP3Title(path) {
-  const metadata = await mm.parseFile(path);
-  return metadata?.common?.title;
+async function getMP3MetaTitle(path) {
+  const mp3Metadata = await mm.parseFile(path);
+  return mp3Metadata?.common?.title;
 }
 
 async function exportPodcasts(podcastsDBData) {
@@ -85,12 +85,12 @@ async function exportPodcasts(podcastsDBData) {
   const podcastMP3Files = podcastFiles.filter((f) => f.includes(".mp3"));
   const filesWithDBData = podcastMP3Files.map((fileName) => {
     const uuid = fileName.replace(".mp3", "");
-    const meta = podcastsDBData.find((m) => m.zuuid === uuid);
+    const dbMeta = podcastsDBData.find((m) => m.zuuid === uuid);
     return {
       fileName,
       uuid,
       path: `${cacheFilesPath}/${fileName}`,
-      meta,
+      dbMeta,
     };
   });
 
@@ -98,8 +98,8 @@ async function exportPodcasts(podcastsDBData) {
   await Promise.all(
     filesWithDBData.map(async (podcast) => {
       const newFileName =
-        podcast.meta?.zcleanedtitle ??
-        (await getMP3Title(podcast.path)) ??
+        podcast.dbMeta?.zcleanedtitle ??
+        (await getMP3MetaTitle(podcast.path)) ??
         podcast.uuid;
       const newFileNameLength = newFileName.substr(0, fileNameMaxLength);
       const newPath = `${outputDir}/${newFileNameLength}.mp3`;
