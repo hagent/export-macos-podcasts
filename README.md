@@ -4,7 +4,6 @@ Since mac os 11.4 apple official podcasts app doesn't allow to drag and drop dow
 Requirements: Node.js version >= 14
 
 Usage:
-1. Clone/Download repository
-2. Open terminal
-3. Go to project folder `cd [REPOSITORY FOLDER]`
-4. Execute `bash ./export.sh`
+1. Clone/Download repository (unarchive it if it was archived)
+2. Open terminal at downloaded folder (context click on folder -> services -> New Terminal at folder or just `cd [REPOSITORY FOLDER]`)
+3. Execute `bash ./export.sh`
