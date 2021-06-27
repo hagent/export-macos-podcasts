@@ -5,17 +5,20 @@ const mm = require("music-metadata");
 const path = require("path");
 const { exec } = require("child_process");
 
-const d = new Date();
-const pad = (s) => s.toString().padStart(2, "0");
-const month = pad(d.getMonth() + 1);
-const day = pad(d.getDate());
-const currentDateFolder = `${d.getFullYear()}.${month}.${day}`;
-const outputDir = `${process.env.HOME}/Downloads/PodcastsExport/${currentDateFolder}`;
 const podcastSelectSQL = `
   SELECT zcleanedtitle as zcleanedtitle, zuuid as zuuid
     FROM ZMTEPISODE;
 `;
 const fileNameMaxLength = 50;
+
+function getOutputDirPath() {
+  const d = new Date();
+  const pad = (s) => s.toString().padStart(2, "0");
+  const month = pad(d.getMonth() + 1);
+  const day = pad(d.getDate());
+  const currentDateFolder = `${d.getFullYear()}.${month}.${day}`;
+  return `${process.env.HOME}/Downloads/PodcastsExport/${currentDateFolder}`;
+}
 
 async function getPodcastsBasePath() {
   const groupContainersFolder = `${process.env.HOME}/Library/Group Containers`;
@@ -93,7 +96,7 @@ async function exportPodcasts(podcastsDBData) {
       dbMeta,
     };
   });
-
+  const outputDir = getOutputDirPath();
   await fs.mkdir(outputDir, { recursive: true });
   await Promise.all(
     filesWithDBData.map(async (podcast) => {
