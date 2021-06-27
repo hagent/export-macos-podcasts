@@ -10,7 +10,7 @@ Usage:
 Alternatively you can clone repository:
 1. Clone/Download repository (unarchive it if it was archived)
 2. Open terminal at downloaded folder (context click on folder -> services -> New Terminal at folder or just open Terminal app and execute `cd [REPOSITORY FOLDER]`)
-3. Execute `bash ./export.sh`
+3. Execute `npm run install-export`
 
 
 Note: script doesn't remove any files from your computer, so if there were more podcasts exported on the same day they will be just added to a folder.
