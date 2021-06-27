@@ -13,4 +13,4 @@ Alternatively you can clone repository:
 3. Execute `npm run install-export`
 
 
-Note: script doesn't remove any files from your computer, so if there were more podcasts exported on the same day they will be just added to a folder.
+Note: script doesn't remove any files from your computer, so if there were already exported podcasts in the same date folder script will just rewrite/add files.
