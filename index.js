@@ -84,7 +84,13 @@ async function getMP3MetaTitle(path) {
 
 async function exportPodcasts(podcastsDBData) {
   const cacheFilesPath = await getPodcastsCacheFilesPath();
-  const podcastFiles = await fs.readdir(cacheFilesPath);
+  let podcastFiles;
+  try {
+    podcastFiles = await fs.readdir(cacheFilesPath);
+  } catch (e) {
+    throw new Error(`Could not find mp3 files in podcasts cache folder either there are no downloaded podcasts or something changed in podcasts app
+original error: ${e}`)
+  }
   const podcastMP3Files = podcastFiles.filter((f) => f.includes(".mp3"));
   const filesWithDBData = podcastMP3Files.map((fileName) => {
     const uuid = fileName.replace(".mp3", "");
