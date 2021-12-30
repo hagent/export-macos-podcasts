@@ -14,10 +14,16 @@
   "license": "ISC",
   "dependencies": {
     "music-metadata": "^7.8.7",
+    "sanitize-filename": "^1.6.3",
     "semver": "^5.3.0",
     "sqlite3": "^5.0.2"
   },
   "bin": {
     "export-macos-podcasts": "exportVersionCheck.js"
+  },
+  "devDependencies": {
+    "eslint": "^8.5.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-plugin-import": "^2.25.3"
   }
 }

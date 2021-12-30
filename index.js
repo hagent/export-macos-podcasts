@@ -26,9 +26,7 @@ async function getPodcastsBasePath() {
     const libraryGroupContainersDirList = await fs.readdir(
       groupContainersFolder
     );
-    const podcastsAppFolder = libraryGroupContainersDirList.find((d) =>
-      d.includes("groups.com.apple.podcasts")
-    );
+    const podcastsAppFolder = libraryGroupContainersDirList.find((d) => d.includes("groups.com.apple.podcasts"));
     if (!podcastsAppFolder) {
       throw new Error(
         `Could not find podcasts app folder in ${groupContainersFolder}`
@@ -55,7 +53,7 @@ async function getDBPodcastsData() {
   const db = {
     serialize: promisify(dbOrigin.serialize).bind(dbOrigin),
     all: promisify(dbOrigin.all).bind(dbOrigin),
-    close: promisify(dbOrigin.close).bind(dbOrigin),
+    close: promisify(dbOrigin.close).bind(dbOrigin)
   };
 
   try {
@@ -111,10 +109,9 @@ async function exportPodcasts(podcastsDBData) {
   await fs.mkdir(outputDir, { recursive: true });
   await Promise.all(
     filesWithDBData.map(async (podcast) => {
-      const exportFileName =
-        podcast.dbMeta?.zcleanedtitle ??
-        (await getMP3MetaTitle(podcast.path)) ??
-        podcast.uuid;
+      const exportFileName = podcast.dbMeta?.zcleanedtitle
+        ?? (await getMP3MetaTitle(podcast.path))
+        ?? podcast.uuid;
       const sanitizedExportFileName = sanitize(exportFileName.substr(0, fileNameMaxLength));
       const newPath = `${outputDir}/${sanitizedExportFileName}.mp3`;
       console.log(`${podcast.path} -> ${newPath}`);
