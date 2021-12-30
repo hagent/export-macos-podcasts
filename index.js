@@ -2,8 +2,8 @@ const { promises: fs } = require("fs");
 const { promisify } = require("util");
 const sqlite3 = require("sqlite3").verbose();
 const mm = require("music-metadata");
-const path = require("path");
 const { exec } = require("child_process");
+const sanitize = require("sanitize-filename");
 
 const podcastSelectSQL = `
   SELECT zcleanedtitle as zcleanedtitle, zuuid as zuuid
@@ -64,7 +64,9 @@ async function getDBPodcastsData() {
   } finally {
     try {
       db.close();
-    } catch {}
+    } catch (e) {
+      console.error(e);
+    }
   }
 }
 
@@ -102,19 +104,19 @@ async function exportPodcasts(podcastsDBData) {
       fileName,
       uuid,
       path: `${cacheFilesPath}/${fileName}`,
-      dbMeta,
+      dbMeta
     };
   });
   const outputDir = getOutputDirPath();
   await fs.mkdir(outputDir, { recursive: true });
   await Promise.all(
     filesWithDBData.map(async (podcast) => {
-      const newFileName =
+      const exportFileName =
         podcast.dbMeta?.zcleanedtitle ??
         (await getMP3MetaTitle(podcast.path)) ??
         podcast.uuid;
-      const newFileNameLength = newFileName.substr(0, fileNameMaxLength);
-      const newPath = `${outputDir}/${newFileNameLength}.mp3`;
+      const sanitizedExportFileName = sanitize(exportFileName.substr(0, fileNameMaxLength));
+      const newPath = `${outputDir}/${sanitizedExportFileName}.mp3`;
       console.log(`${podcast.path} -> ${newPath}`);
       await fs.copyFile(podcast.path, newPath);
     })
