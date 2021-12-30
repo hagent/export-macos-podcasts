@@ -109,9 +109,9 @@ async function exportPodcasts(podcastsDBData) {
   await fs.mkdir(outputDir, { recursive: true });
   await Promise.all(
     filesWithDBData.map(async (podcast) => {
-      const exportFileName = podcast.dbMeta?.zcleanedtitle
-        ?? (await getMP3MetaTitle(podcast.path))
-        ?? podcast.uuid;
+      const exportFileName = podcast.dbMeta?.zcleanedtitle // 1. from apple podcast database
+        ?? (await getMP3MetaTitle(podcast.path)) // 2. from mp3 meta data
+        ?? podcast.uuid; // 3. fallback to unreadable uuid
       const sanitizedExportFileName = sanitize(exportFileName.substr(0, fileNameMaxLength));
       const newPath = `${outputDir}/${sanitizedExportFileName}.mp3`;
       console.log(`${podcast.path} -> ${newPath}`);
