@@ -1,13 +1,18 @@
-const { promises: fs } = require("fs");
+const { promises: fs, existsSync, mkdirSync } = require("fs");
 const { promisify } = require("util");
 const sqlite3 = require("sqlite3").verbose();
 const mm = require("music-metadata");
 const { exec } = require("child_process");
 const sanitize = require("sanitize-filename");
 
+
+// Added the Podcast name to the query
+// Looks like the date stored in the SQLite has an offset of +31 years, so we adjust the query
 const podcastSelectSQL = `
-  SELECT zcleanedtitle as zcleanedtitle, zuuid as zuuid
-    FROM ZMTEPISODE;
+  SELECT PC.ztitle as zpodcast, EP.zcleanedtitle as zcleanedtitle, EP.zuuid as zuuid,
+    datetime(EP.zpubdate,'unixepoch','+31 years') date
+    FROM ZMTPODCAST PC LEFT OUTER JOIN ZMTEPISODE EP
+    ON PC.Z_PK = EP.ZPODCAST
 `;
 const fileNameMaxLength = 50;
 
@@ -109,13 +114,29 @@ async function exportPodcasts(podcastsDBData) {
   await fs.mkdir(outputDir, { recursive: true });
   await Promise.all(
     filesWithDBData.map(async (podcast) => {
+      // Create an export subdir
+      let exportDirPath = outputDir;
+      const exportDir = podcast.dbMeta?.zpodcast;
+      if(exportDir) {
+        exportDirPath = `${outputDir}/${exportDir}`;
+        // Needs to be sync else the same dir can be created multiple times
+        if(!existsSync(exportDirPath)) {
+          mkdirSync(exportDirPath);
+        }
+      }
+      const date = podcast.dbMeta?.date;
       const exportFileName = podcast.dbMeta?.zcleanedtitle // 1. from apple podcast database
         ?? (await getMP3MetaTitle(podcast.path)) // 2. from mp3 meta data
         ?? podcast.uuid; // 3. fallback to unreadable uuid
       const sanitizedExportFileName = sanitize(exportFileName.substr(0, fileNameMaxLength));
-      const newPath = `${outputDir}/${sanitizedExportFileName}.mp3`;
-      console.log(`${podcast.path} -> ${newPath}`);
+      const newPath = `${exportDirPath}/${sanitizedExportFileName}.mp3`;
       await fs.copyFile(podcast.path, newPath);
+      console.log(`${podcast.path} -> ${newPath}`);
+      if(date) {
+        const d = new Date(date);
+        const s = d.toISOString();
+        await fs.utimes(newPath, d, d);
+      }
     })
   );
   console.log(`\n\nSuccessful Export to '${outputDir}' folder!`);
