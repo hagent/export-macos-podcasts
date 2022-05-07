@@ -5,7 +5,6 @@ const mm = require("music-metadata");
 const { exec } = require("child_process");
 const sanitize = require("sanitize-filename");
 
-
 // Added the Podcast name to the query
 // Looks like the date stored in the SQLite has an offset of +31 years, so we adjust the query
 const podcastSelectSQL = `
@@ -117,10 +116,10 @@ async function exportPodcasts(podcastsDBData) {
       // Create an export subdir
       let exportDirPath = outputDir;
       const exportDir = podcast.dbMeta?.zpodcast;
-      if(exportDir) {
+      if (exportDir) {
         exportDirPath = `${outputDir}/${exportDir}`;
         // Needs to be sync else the same dir can be created multiple times
-        if(!existsSync(exportDirPath)) {
+        if (!existsSync(exportDirPath)) {
           mkdirSync(exportDirPath);
         }
       }
@@ -132,9 +131,8 @@ async function exportPodcasts(podcastsDBData) {
       const newPath = `${exportDirPath}/${sanitizedExportFileName}.mp3`;
       await fs.copyFile(podcast.path, newPath);
       console.log(`${podcast.path} -> ${newPath}`);
-      if(date) {
+      if (date) {
         const d = new Date(date);
-        const s = d.toISOString();
         await fs.utimes(newPath, d, d);
       }
     })

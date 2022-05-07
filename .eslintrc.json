@@ -5,6 +5,7 @@
   },
   "rules": {
     "quotes": ["error", "double"],
-    "comma-dangle": ["error", "never"]
+    "comma-dangle": ["error", "never"],
+    "no-console": "off"
   }
 }
