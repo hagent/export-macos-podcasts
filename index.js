@@ -115,7 +115,7 @@ async function exportPodcasts(podcastsDBData) {
     filesWithDBData.map(async (podcast) => {
       // Create an export subdir
       let exportDirPath = outputDir;
-      const exportDir = podcast.dbMeta?.zpodcast;
+      const exportDir = podcast.dbMeta?.zpodcast.replaceAll('/', '_');
       if (exportDir) {
         exportDirPath = `${outputDir}/${exportDir}`;
         // Needs to be sync else the same dir can be created multiple times
