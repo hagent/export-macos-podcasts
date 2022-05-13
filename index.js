@@ -120,16 +120,40 @@ async function buildPodcastDict(fileName, cacheFilesPath, podcastsDBData) {
 }
 
 
-async function exportPodcasts(podcastsDBData) {
+function filterPodcasts(podcasts, filepatterns = []) {
+  if (filepatterns.length == 0) {
+    return podcasts;
+  }
+
+  function matchesAnyFilepattern(s) {
+    const indices = filepatterns.map((fp) => {
+      return s.indexOf(fp);
+    });
+    const found = indices.filter((i) => { return i != -1; });
+    return found.length > 0;
+  }
+
+  return podcasts.filter((p) => {
+    return matchesAnyFilepattern(p.exportFileName);
+  });
+}
+
+
+async function exportPodcasts(podcastsDBData, filepatterns = []) {
   const cacheFilesPath = await getPodcastsCacheFilesPath();
   const podcastMP3Files = await getPodcastsCacheMP3Files(cacheFilesPath);
   const podcasts = await Promise.all(podcastMP3Files.map((fileName) => {
     return buildPodcastDict(fileName, cacheFilesPath, podcastsDBData);
   }));
+  const filteredPodcasts = filterPodcasts(podcasts, filepatterns);
+  if (filepatterns.length > 0) {
+    console.log(`Exporting ${filteredPodcasts.length} of ${podcasts.length}`);
+  }
+
   const outputDir = getOutputDirPath();
   await fs.mkdir(outputDir, { recursive: true });
   await Promise.all(
-    podcasts.map(async (podcast) => {
+    filteredPodcasts.map(async (podcast) => {
       // Create an export subdir
       let exportDirPath = outputDir;
       if (podcast.podcastName) {
@@ -153,9 +177,10 @@ async function exportPodcasts(podcastsDBData) {
   exec(`open ${outputDir}`);
 }
 
-async function main() {
+async function main(filepatterns = []) {
   const dbPodcastData = await tryGetDBPodcastsData();
-  await exportPodcasts(dbPodcastData);
+  await exportPodcasts(dbPodcastData, filepatterns);
 }
 
-main();
+var args = process.argv.slice(2);
+main(args);
