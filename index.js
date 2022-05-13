@@ -162,7 +162,11 @@ async function exportPodcasts(podcastsDBData, filepatterns = []) {
 
       const newPath = `${exportDirPath}/${podcast.exportFileName}`;
       await fs.copyFile(podcast.path, newPath);
-      console.log(`${podcast.path} -> ${newPath}`);
+
+      const logName = [ podcast.podcastName, podcast.exportFileName ].
+            filter((s) => s).
+            join('/');
+      console.log(`${podcast.fileName} -> ${logName}`);
       if (podcast.date) {
         const d = new Date(podcast.date);
         await fs.utimes(newPath, d, d);
