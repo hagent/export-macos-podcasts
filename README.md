@@ -7,6 +7,8 @@ Usage:
 1. Open terminal app
 2. Execute `npx github:hagent/export-macos-podcasts` command
 
+To export a subset of podcasts, add one or more arguments.  Only podcasts whose series name or file name matches any argument will be included.  For example: `npx github:hagent/export-macos-podcasts Radio`
+
 Alternatively you can clone repository:
 1. Clone/Download repository (unarchive it if it was archived)
 2. Open terminal at downloaded folder (context click on folder -> services -> New Terminal at folder or just open Terminal app and execute `cd [REPOSITORY FOLDER]`)
