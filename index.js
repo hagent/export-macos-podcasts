@@ -125,16 +125,12 @@ function filterPodcasts(podcasts, filepatterns = []) {
     return podcasts;
   }
 
-  function matchesAnyFilepattern(s) {
-    const indices = filepatterns.map((fp) => {
-      return s.indexOf(fp);
-    });
-    const found = indices.filter((i) => { return i != -1; });
-    return found.length > 0;
+  function matchesAny(s) {
+    return filepatterns.some((p) => { return s.indexOf(p) != -1 })
   }
 
   return podcasts.filter((p) => {
-    return matchesAnyFilepattern(p.exportFileName);
+    return matchesAny(p.exportFileName);
   });
 }
 
