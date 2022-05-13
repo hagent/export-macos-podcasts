@@ -130,7 +130,7 @@ function filterPodcasts(podcasts, filepatterns = []) {
   }
 
   return podcasts.filter((p) => {
-    return matchesAny(p.exportFileName);
+    return matchesAny(p.exportFileName) || matchesAny(p.podcastName);
   });
 }
 
