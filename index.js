@@ -97,48 +97,54 @@ original error: ${e}`);
 }
 
 
-function buildPodcastDict(fileName, cacheFilesPath, podcastsDBData) {
+async function buildPodcastDict(fileName, cacheFilesPath, podcastsDBData) {
   const uuid = fileName.replace(".mp3", "");
   const dbMeta = podcastsDBData.find((m) => m.zuuid === uuid);
-  return {
+  const path = `${cacheFilesPath}/${fileName}`;
+  const exportBase = dbMeta?.zcleanedtitle // 1. from apple podcast database
+        ?? (await getMP3MetaTitle(path)) // 2. from mp3 meta data
+        ?? uuid; // 3. fallback to unreadable uuid
+  const podcastName = dbMeta?.zpodcast.replaceAll('/', '_');
+  const exportFileName = sanitize(exportBase.substr(0, fileNameMaxLength));
+  const date = dbMeta?.date
+
+  const ret = {
+    podcastName,
+    date,
     fileName,
+    path,
     uuid,
-    path: `${cacheFilesPath}/${fileName}`,
-    dbMeta
+    exportFileName: `${exportFileName}.mp3`
   };
+  return ret;
 }
 
 
 async function exportPodcasts(podcastsDBData) {
   const cacheFilesPath = await getPodcastsCacheFilesPath();
   const podcastMP3Files = await getPodcastsCacheMP3Files(cacheFilesPath);
-  const filesWithDBData = podcastMP3Files.map((fileName) => {
+  const podcasts = await Promise.all(podcastMP3Files.map((fileName) => {
     return buildPodcastDict(fileName, cacheFilesPath, podcastsDBData);
-  });
+  }));
   const outputDir = getOutputDirPath();
   await fs.mkdir(outputDir, { recursive: true });
   await Promise.all(
-    filesWithDBData.map(async (podcast) => {
+    podcasts.map(async (podcast) => {
       // Create an export subdir
       let exportDirPath = outputDir;
-      const exportDir = podcast.dbMeta?.zpodcast.replaceAll('/', '_');
-      if (exportDir) {
-        exportDirPath = `${outputDir}/${exportDir}`;
-        // Needs to be sync else the same dir can be created multiple times
-        if (!existsSync(exportDirPath)) {
-          mkdirSync(exportDirPath);
-        }
+      if (podcast.podcastName) {
+        exportDirPath = `${outputDir}/${podcast.podcastName}`;
       }
-      const date = podcast.dbMeta?.date;
-      const exportFileName = podcast.dbMeta?.zcleanedtitle // 1. from apple podcast database
-        ?? (await getMP3MetaTitle(podcast.path)) // 2. from mp3 meta data
-        ?? podcast.uuid; // 3. fallback to unreadable uuid
-      const sanitizedExportFileName = sanitize(exportFileName.substr(0, fileNameMaxLength));
-      const newPath = `${exportDirPath}/${sanitizedExportFileName}.mp3`;
+      // Needs to be sync else the same dir can be created multiple times
+      if (!existsSync(exportDirPath)) {
+        mkdirSync(exportDirPath);
+      }
+
+      const newPath = `${exportDirPath}/${podcast.exportFileName}`;
       await fs.copyFile(podcast.path, newPath);
       console.log(`${podcast.path} -> ${newPath}`);
-      if (date) {
-        const d = new Date(date);
+      if (podcast.date) {
+        const d = new Date(podcast.date);
         await fs.utimes(newPath, d, d);
       }
     })
