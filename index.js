@@ -96,18 +96,24 @@ original error: ${e}`);
   }
 }
 
+
+function buildPodcastDict(fileName, cacheFilesPath, podcastsDBData) {
+  const uuid = fileName.replace(".mp3", "");
+  const dbMeta = podcastsDBData.find((m) => m.zuuid === uuid);
+  return {
+    fileName,
+    uuid,
+    path: `${cacheFilesPath}/${fileName}`,
+    dbMeta
+  };
+}
+
+
 async function exportPodcasts(podcastsDBData) {
   const cacheFilesPath = await getPodcastsCacheFilesPath();
   const podcastMP3Files = await getPodcastsCacheMP3Files(cacheFilesPath);
   const filesWithDBData = podcastMP3Files.map((fileName) => {
-    const uuid = fileName.replace(".mp3", "");
-    const dbMeta = podcastsDBData.find((m) => m.zuuid === uuid);
-    return {
-      fileName,
-      uuid,
-      path: `${cacheFilesPath}/${fileName}`,
-      dbMeta
-    };
+    return buildPodcastDict(fileName, cacheFilesPath, podcastsDBData);
   });
   const outputDir = getOutputDirPath();
   await fs.mkdir(outputDir, { recursive: true });
