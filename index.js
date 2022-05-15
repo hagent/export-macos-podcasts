@@ -196,23 +196,24 @@ async function exportPodcasts(podcastsDBData, filepatterns = []) {
     return parts.filter((s) => s).join('/');
   }
 
+  // Make all necessary directories.  Each podcast is in its own
+  // subdir.
   const outputDir = getOutputDirPath();
-  await fs.mkdir(outputDir, { recursive: true });
+  const allDirs = filteredPodcasts.map(p => {
+    return joinPath([outputDir, p.podcastName]);
+  });
+  const uniqueDirs = Array.from(new Set(allDirs));
+  uniqueDirs.forEach(d => mkdirSync(d, { recursive: true }));
+
+  // Actual file export.
   await Promise.all(
-    filteredPodcasts.map(async (podcast) => {
-      let exportDirPath = joinPath([outputDir, podcast.podcastName]);
-
-      // Create an export subdir.
-      // Needs to be sync else the same dir can be created multiple times.
-      if (!existsSync(exportDirPath)) {
-        mkdirSync(exportDirPath);
-      }
-
-      const newPath = `${exportDirPath}/${podcast.exportFileName}`;
-      const logDestFilePath = joinPath([podcast.podcastName, podcast.exportFileName]);
+    filteredPodcasts.map(async (p) => {
+      const parts = [outputDir, p.podcastName, p.exportFileName];
+      const newPath = joinPath(parts);
+      const logDestFilePath = joinPath([p.podcastName, p.exportFileName]);
       if (!existsSync(newPath)) {
-        await exportSingle(podcast, newPath);
-        console.log(`${podcast.fileName} -> ${logDestFilePath}`);
+        await exportSingle(p, newPath);
+        console.log(`${p.fileName} -> ${logDestFilePath}`);
       }
       else {
         console.log(`Already have ${logDestFilePath}, skipping`);
