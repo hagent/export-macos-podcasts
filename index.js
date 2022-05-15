@@ -172,6 +172,14 @@ function filterPodcasts(podcasts, filepatterns = []) {
   return podcasts.filter((p) => matchesAny(p.exportFileName) || matchesAny(p.podcastName));
 }
 
+async function exportSingle(podcast, newPath) {
+  await fs.copyFile(podcast.path, newPath);
+  if (podcast.date) {
+    const d = new Date(podcast.date);
+    await fs.utimes(newPath, d, d);
+  }
+}
+
 async function exportPodcasts(podcastsDBData, filepatterns = []) {
   const cacheFilesPath = await getPodcastsCacheFilesPath();
   const podcastMP3Files = await getPodcastsCacheMP3Files(cacheFilesPath);
@@ -199,16 +207,11 @@ async function exportPodcasts(podcastsDBData, filepatterns = []) {
       }
 
       const newPath = `${exportDirPath}/${podcast.exportFileName}`;
-      await fs.copyFile(podcast.path, newPath);
-
-      const logDestFilePath = [podcast.podcastName, podcast.exportFileName]
-        .filter((s) => s)
-        .join("/");
+      await exportSingle(podcast, newPath);
+      const logDestFilePath = [ podcast.podcastName, podcast.exportFileName ].
+        filter((s) => s).
+        join('/');
       console.log(`${podcast.fileName} -> ${logDestFilePath}`);
-      if (podcast.date) {
-        const d = new Date(podcast.date);
-        await fs.utimes(newPath, d, d);
-      }
     })
   );
   console.log(`\n\nSuccessful Export to '${outputDir}' folder!`);
