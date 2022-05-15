@@ -222,5 +222,8 @@ async function main(filepatterns = []) {
   await exportPodcasts(dbPodcastData, filepatterns);
 }
 
-const args = process.argv.slice(2);
-main(args);
+// User might specify one pattern, in which case argv.pattern is a
+// string, or multiple, in which case it's an array.
+patterns = [ argv.pattern ].flat()
+
+main(patterns);
