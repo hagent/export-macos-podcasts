@@ -55,12 +55,16 @@ const podcastSelectSQL = `
 const fileNameMaxLength = 50;
 
 function getOutputDirPath() {
-  const d = new Date();
-  const pad = (s) => s.toString().padStart(2, "0");
-  const month = pad(d.getMonth() + 1);
-  const day = pad(d.getDate());
-  const currentDateFolder = `${d.getFullYear()}.${month}.${day}`;
-  return `${process.env.HOME}/Downloads/PodcastsExport/${currentDateFolder}`;
+  let ret = argv.outputdir;
+  if (argv.datesubdir) {
+    const d = new Date();
+    const pad = (s) => s.toString().padStart(2, "0");
+    const month = pad(d.getMonth() + 1);
+    const day = pad(d.getDate());
+    const currentDateFolder = `${d.getFullYear()}.${month}.${day}`;
+    ret = `${ret}/${currentDateFolder}`;
+  }
+  return ret;
 }
 
 async function getPodcastsBasePath() {
