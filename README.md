@@ -7,7 +7,28 @@ Usage:
 1. Open terminal app
 2. Execute `npx github:hagent/export-macos-podcasts` command
 
-To export a subset of podcasts, add one or more arguments.  Only podcasts whose series name or file name matches any argument will be included.  For example: `npx github:hagent/export-macos-podcasts Radio`
+You can use some command-line arguments as well for further control:
+
+```
+$ node index.js -h
+Options:
+      --version     Show version number                                [boolean]
+  -o, --outputdir   Base output directory
+                                [string] [default: "~/Downloads/PodcastsExport"]
+  -d, --datesubdir  Add YYYY.MM.DD subdirectory to output dir
+                                                       [boolean] [default: true]
+  -p, --pattern     File substring patterns to match                    [string]
+      --nospaces    Replace filename spaces with underscores
+                                                      [boolean] [default: false]
+  -h, --help        Show help                                          [boolean]
+```
+
+For example, the below command will export podcasts matching the strings "tregua" or "miedo" to the "~/Downloads/some/folder" director, and will not create "YYYY.MM.DD" subfolder under that.  "--nospaces" indicates that the downloaded file names should not contain any spaces, which is sometimes useful for file management.
+
+```
+$ node index.js -p tregua -p miedo -o ~/Downloads/some/folder --datesubfolder false --nospaces
+```
+
 
 Alternatively you can clone repository:
 1. Clone/Download repository (unarchive it if it was archived)
