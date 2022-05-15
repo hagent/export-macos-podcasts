@@ -5,6 +5,45 @@ const mm = require("music-metadata");
 const { exec } = require("child_process");
 const sanitize = require("sanitize-filename");
 
+const yargs = require('yargs');
+
+const argv = yargs
+      .option('outputdir', {
+        alias: 'o',
+        description: 'Base output directory',
+        type: 'string',
+        default: `${process.env.HOME}/Downloads/PodcastsExport`
+      })
+      .option('datesubdir', {
+        alias: 'd',
+        description: 'Add YYYY.MM.DD subdirectory to output dir',
+        type: 'boolean',
+        default: true
+      })
+      .option('pattern', {
+        alias: 'p',
+        description: 'File substring patterns to match',
+        type: 'string'
+      })
+      .option('silent', {
+        description: 'Suppress extra output',
+        type: 'boolean',
+        default: false
+      })
+      .option('nospaces', {
+        description: 'Replace filename spaces with underscores',
+        type: 'boolean',
+        default: true
+      })
+      .option('report', {
+        description: 'Provide report at end of files downloaded',
+        type: 'boolean',
+        default: true
+      })
+      .help()
+      .alias('help', 'h').argv;
+
+
 // Added the Podcast name to the query
 // Looks like the date stored in the SQLite has an offset of +31 years, so we adjust the query
 const podcastSelectSQL = `
