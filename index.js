@@ -96,43 +96,79 @@ original error: ${e}`);
   }
 }
 
-async function exportPodcasts(podcastsDBData) {
+
+async function buildPodcastDict(fileName, cacheFilesPath, podcastsDBData) {
+  const uuid = fileName.replace(".mp3", "");
+  const dbMeta = podcastsDBData.find((m) => m.zuuid === uuid);
+  const path = `${cacheFilesPath}/${fileName}`;
+  const exportBase = dbMeta?.zcleanedtitle // 1. from apple podcast database
+        ?? (await getMP3MetaTitle(path)) // 2. from mp3 meta data
+        ?? uuid; // 3. fallback to unreadable uuid
+  const podcastName = dbMeta?.zpodcast.replaceAll('/', '_');
+  const exportFileName = sanitize(exportBase.substr(0, fileNameMaxLength));
+  const date = dbMeta?.date
+
+  const ret = {
+    podcastName,
+    date,
+    fileName,
+    path,
+    uuid,
+    exportFileName: `${exportFileName}.mp3`
+  };
+  return ret;
+}
+
+
+function filterPodcasts(podcasts, filepatterns = []) {
+  if (filepatterns.length == 0) {
+    return podcasts;
+  }
+
+  function matchesAny(s) {
+    return filepatterns.some((p) => { return s.indexOf(p) != -1 })
+  }
+
+  return podcasts.filter((p) => {
+    return matchesAny(p.exportFileName) || matchesAny(p.podcastName);
+  });
+}
+
+
+async function exportPodcasts(podcastsDBData, filepatterns = []) {
   const cacheFilesPath = await getPodcastsCacheFilesPath();
   const podcastMP3Files = await getPodcastsCacheMP3Files(cacheFilesPath);
-  const filesWithDBData = podcastMP3Files.map((fileName) => {
-    const uuid = fileName.replace(".mp3", "");
-    const dbMeta = podcastsDBData.find((m) => m.zuuid === uuid);
-    return {
-      fileName,
-      uuid,
-      path: `${cacheFilesPath}/${fileName}`,
-      dbMeta
-    };
-  });
+  const podcasts = await Promise.all(podcastMP3Files.map((fileName) => {
+    return buildPodcastDict(fileName, cacheFilesPath, podcastsDBData);
+  }));
+  const filteredPodcasts = filterPodcasts(podcasts, filepatterns);
+  if (filepatterns.length > 0) {
+    console.log(`Exporting ${filteredPodcasts.length} of ${podcasts.length}`);
+  }
+
   const outputDir = getOutputDirPath();
   await fs.mkdir(outputDir, { recursive: true });
   await Promise.all(
-    filesWithDBData.map(async (podcast) => {
+    filteredPodcasts.map(async (podcast) => {
       // Create an export subdir
       let exportDirPath = outputDir;
-      const exportDir = podcast.dbMeta?.zpodcast;
-      if (exportDir) {
-        exportDirPath = `${outputDir}/${exportDir}`;
-        // Needs to be sync else the same dir can be created multiple times
-        if (!existsSync(exportDirPath)) {
-          mkdirSync(exportDirPath);
-        }
+      if (podcast.podcastName) {
+        exportDirPath = `${outputDir}/${podcast.podcastName}`;
       }
-      const date = podcast.dbMeta?.date;
-      const exportFileName = podcast.dbMeta?.zcleanedtitle // 1. from apple podcast database
-        ?? (await getMP3MetaTitle(podcast.path)) // 2. from mp3 meta data
-        ?? podcast.uuid; // 3. fallback to unreadable uuid
-      const sanitizedExportFileName = sanitize(exportFileName.substr(0, fileNameMaxLength));
-      const newPath = `${exportDirPath}/${sanitizedExportFileName}.mp3`;
+      // Needs to be sync else the same dir can be created multiple times
+      if (!existsSync(exportDirPath)) {
+        mkdirSync(exportDirPath);
+      }
+
+      const newPath = `${exportDirPath}/${podcast.exportFileName}`;
       await fs.copyFile(podcast.path, newPath);
-      console.log(`${podcast.path} -> ${newPath}`);
-      if (date) {
-        const d = new Date(date);
+
+      const logName = [ podcast.podcastName, podcast.exportFileName ].
+            filter((s) => s).
+            join('/');
+      console.log(`${podcast.fileName} -> ${logName}`);
+      if (podcast.date) {
+        const d = new Date(podcast.date);
         await fs.utimes(newPath, d, d);
       }
     })
@@ -141,9 +177,10 @@ async function exportPodcasts(podcastsDBData) {
   exec(`open ${outputDir}`);
 }
 
-async function main() {
+async function main(filepatterns = []) {
   const dbPodcastData = await tryGetDBPodcastsData();
-  await exportPodcasts(dbPodcastData);
+  await exportPodcasts(dbPodcastData, filepatterns);
 }
 
-main();
+var args = process.argv.slice(2);
+main(args);

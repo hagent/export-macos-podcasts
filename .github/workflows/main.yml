@@ -7,6 +7,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - run: echo 12345
     - run: pwd
     - run: npm install
+      with:
+            node-version: 14.x
     - run: npm run lint 
+      with:
+        node-version: 14.x
