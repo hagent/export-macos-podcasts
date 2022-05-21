@@ -104,7 +104,7 @@ async function buildPodcastDict(fileName, cacheFilesPath, podcastsDBData) {
   const exportBase = dbMeta?.zcleanedtitle // 1. from apple podcast database
         ?? (await getMP3MetaTitle(path)) // 2. from mp3 meta data
         ?? uuid; // 3. fallback to unreadable uuid
-  const podcastName = dbMeta?.zpodcast.replaceAll('/', '_');
+  const podcastName = sanitize(dbMeta?.zpodcast);
   const exportFileName = sanitize(exportBase.substr(0, fileNameMaxLength));
   const date = dbMeta?.date
 
