@@ -125,8 +125,10 @@ function filterPodcasts(podcasts, filepatterns = []) {
     return podcasts;
   }
 
-  function matchesAny(s) {
-    return filepatterns.some((p) => { return s.indexOf(p) != -1 })
+  function matchesAny(fileOrDir) {
+    return filepatterns
+      .map(pattern => pattern.toLowerCase())
+      .some(pattern => fileOrDir.toLowerCase().includes(pattern) )
   }
 
   return podcasts.filter((p) => {
