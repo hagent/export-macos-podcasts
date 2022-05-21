@@ -96,7 +96,6 @@ original error: ${e}`);
   }
 }
 
-
 async function mergeFilesWithDBMetaData(fileName, cacheFilesPath, podcastsDBData) {
   const uuid = fileName.replace(".mp3", "");
   const dbMeta = podcastsDBData.find((m) => m.zuuid === uuid);
@@ -106,7 +105,7 @@ async function mergeFilesWithDBMetaData(fileName, cacheFilesPath, podcastsDBData
         ?? uuid; // 3. fallback to unreadable uuid
   const podcastName = sanitize(dbMeta?.zpodcast);
   const exportFileName = sanitize(exportBase.substr(0, fileNameMaxLength));
-  const date = dbMeta?.date
+  const date = dbMeta?.date;
 
   return {
     podcastName,
@@ -118,30 +117,28 @@ async function mergeFilesWithDBMetaData(fileName, cacheFilesPath, podcastsDBData
   };
 }
 
-
 function filterPodcasts(podcasts, filepatterns = []) {
-  if (filepatterns.length == 0) {
+  if (filepatterns.length === 0) {
     return podcasts;
   }
 
   function matchesAny(fileOrDir) {
     return filepatterns
-      .map(pattern => pattern.toLowerCase())
-      .some(pattern => fileOrDir.toLowerCase().includes(pattern) )
+      .map((pattern) => pattern.toLowerCase())
+      .some((pattern) => fileOrDir.toLowerCase().includes(pattern));
   }
 
-  return podcasts.filter((p) => {
-    return matchesAny(p.exportFileName) || matchesAny(p.podcastName);
-  });
+  return podcasts.filter((p) =>
+    matchesAny(p.exportFileName) || matchesAny(p.podcastName)
+  );
 }
-
 
 async function exportPodcasts(podcastsDBData, filepatterns = []) {
   const cacheFilesPath = await getPodcastsCacheFilesPath();
   const podcastMP3Files = await getPodcastsCacheMP3Files(cacheFilesPath);
-  const podcasts = await Promise.all(podcastMP3Files.map((fileName) => {
-    return mergeFilesWithDBMetaData(fileName, cacheFilesPath, podcastsDBData);
-  }));
+  const podcasts = await Promise.all(podcastMP3Files.map((fileName) =>
+    mergeFilesWithDBMetaData(fileName, cacheFilesPath, podcastsDBData)
+  ));
   const filteredPodcasts = filterPodcasts(podcasts, filepatterns);
   if (filepatterns.length > 0) {
     console.log(`Exporting ${filteredPodcasts.length} of ${podcasts.length}`);
@@ -164,9 +161,9 @@ async function exportPodcasts(podcastsDBData, filepatterns = []) {
       const newPath = `${exportDirPath}/${podcast.exportFileName}`;
       await fs.copyFile(podcast.path, newPath);
 
-      const logDestFilePath = [ podcast.podcastName, podcast.exportFileName ].
-            filter((s) => s).
-            join('/');
+      const logDestFilePath = [podcast.podcastName, podcast.exportFileName]
+        .filter((s) => s)
+        .join("/");
       console.log(`${podcast.fileName} -> ${logDestFilePath}`);
       if (podcast.date) {
         const d = new Date(podcast.date);
@@ -183,5 +180,5 @@ async function main(filepatterns = []) {
   await exportPodcasts(dbPodcastData, filepatterns);
 }
 
-var args = process.argv.slice(2);
+const args = process.argv.slice(2);
 main(args);
