@@ -128,17 +128,13 @@ function filterPodcasts(podcasts, filepatterns = []) {
       .some((pattern) => fileOrDir.toLowerCase().includes(pattern));
   }
 
-  return podcasts.filter((p) =>
-    matchesAny(p.exportFileName) || matchesAny(p.podcastName)
-  );
+  return podcasts.filter((p) => matchesAny(p.exportFileName) || matchesAny(p.podcastName));
 }
 
 async function exportPodcasts(podcastsDBData, filepatterns = []) {
   const cacheFilesPath = await getPodcastsCacheFilesPath();
   const podcastMP3Files = await getPodcastsCacheMP3Files(cacheFilesPath);
-  const podcasts = await Promise.all(podcastMP3Files.map((fileName) =>
-    mergeFilesWithDBMetaData(fileName, cacheFilesPath, podcastsDBData)
-  ));
+  const podcasts = await Promise.all(podcastMP3Files.map((fileName) => mergeFilesWithDBMetaData(fileName, cacheFilesPath, podcastsDBData)));
   const filteredPodcasts = filterPodcasts(podcasts, filepatterns);
   if (filepatterns.length > 0) {
     console.log(`Exporting ${filteredPodcasts.length} of ${podcasts.length}`);
