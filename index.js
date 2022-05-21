@@ -97,7 +97,7 @@ original error: ${e}`);
 }
 
 
-async function buildPodcastDict(fileName, cacheFilesPath, podcastsDBData) {
+async function mergeFilesWithDBMetaData(fileName, cacheFilesPath, podcastsDBData) {
   const uuid = fileName.replace(".mp3", "");
   const dbMeta = podcastsDBData.find((m) => m.zuuid === uuid);
   const path = `${cacheFilesPath}/${fileName}`;
@@ -141,7 +141,7 @@ async function exportPodcasts(podcastsDBData, filepatterns = []) {
   const cacheFilesPath = await getPodcastsCacheFilesPath();
   const podcastMP3Files = await getPodcastsCacheMP3Files(cacheFilesPath);
   const podcasts = await Promise.all(podcastMP3Files.map((fileName) => {
-    return buildPodcastDict(fileName, cacheFilesPath, podcastsDBData);
+    return mergeFilesWithDBMetaData(fileName, cacheFilesPath, podcastsDBData);
   }));
   const filteredPodcasts = filterPodcasts(podcasts, filepatterns);
   if (filepatterns.length > 0) {
