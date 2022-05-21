@@ -108,7 +108,7 @@ async function mergeFilesWithDBMetaData(fileName, cacheFilesPath, podcastsDBData
   const exportFileName = sanitize(exportBase.substr(0, fileNameMaxLength));
   const date = dbMeta?.date
 
-  const ret = {
+  return {
     podcastName,
     date,
     fileName,
@@ -116,7 +116,6 @@ async function mergeFilesWithDBMetaData(fileName, cacheFilesPath, podcastsDBData
     uuid,
     exportFileName: `${exportFileName}.mp3`
   };
-  return ret;
 }
 
 
