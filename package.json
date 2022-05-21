@@ -8,7 +8,9 @@
   "main": "index.js",
   "scripts": {
     "start": "node exportVersionCheck.js",
-    "install-export": "npm install && npm start"
+    "install-export": "npm install && npm start",
+    "lint": "eslint index.js",
+    "prepare": "husky install"
   },
   "author": "Alexey Tomin",
   "license": "ISC",
@@ -24,6 +26,7 @@
   "devDependencies": {
     "eslint": "^8.5.0",
     "eslint-config-airbnb-base": "^15.0.0",
-    "eslint-plugin-import": "^2.25.3"
+    "eslint-plugin-import": "^2.25.3",
+    "husky": "^8.0.0"
   }
 }
