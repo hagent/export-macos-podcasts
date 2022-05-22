@@ -134,7 +134,10 @@ function filterPodcasts(podcasts, filepatterns = []) {
 async function exportPodcasts(podcastsDBData, filepatterns = []) {
   const cacheFilesPath = await getPodcastsCacheFilesPath();
   const podcastMP3Files = await getPodcastsCacheMP3Files(cacheFilesPath);
-  const podcasts = await Promise.all(podcastMP3Files.map((fileName) => mergeFilesWithDBMetaData(fileName, cacheFilesPath, podcastsDBData)));
+  const podcastPromises = podcastMP3Files.map(
+    (fileName) => mergeFilesWithDBMetaData(fileName, cacheFilesPath, podcastsDBData)
+  );
+  const podcasts = await Promise.all(podcastPromises);
   const filteredPodcasts = filterPodcasts(podcasts, filepatterns);
   if (filepatterns.length > 0) {
     console.log(`Exporting ${filteredPodcasts.length} of ${podcasts.length}`);
