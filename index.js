@@ -247,17 +247,18 @@ async function exportPodcasts(podcastsDBData, filepatterns = []) {
   exec(`open ${outputDir}`);
 }
 
-async function main(filepatterns = []) {
+async function main() {
   const dbPodcastData = await tryGetDBPodcastsData();
-  await exportPodcasts(dbPodcastData, filepatterns);
+
+  // Default: return all files.
+  let patterns = [];
+  if (argv.pattern) {
+    // User might specify one pattern, in which case argv.pattern is a
+    // string, or multiple, in which case it's an array.
+    patterns = [ argv.pattern ].flat();
+  }
+  await exportPodcasts(dbPodcastData, patterns);
 }
 
-// Default: return all files.
-let patterns = []
-if (argv.pattern) {
-  // User might specify one pattern, in which case argv.pattern is a
-  // string, or multiple, in which case it's an array.
-  patterns = [ argv.pattern ].flat();
-}
 
-main(patterns);
+main();
