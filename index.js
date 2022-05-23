@@ -4,41 +4,39 @@ const sqlite3 = require("sqlite3").verbose();
 const mm = require("music-metadata");
 const { exec } = require("child_process");
 const sanitize = require("sanitize-filename");
-
-const yargs = require('yargs');
+const yargs = require("yargs");
 
 const argv = yargs
-      .option('outputdir', {
-        alias: 'o',
-        description: 'Base output directory',
-        type: 'string',
-        default: `${process.env.HOME}/Downloads/PodcastsExport`
-      })
-      .option('datesubdir', {
-        alias: 'd',
-        description: 'Add YYYY.MM.DD subdirectory to output dir',
-        type: 'boolean',
-        default: true
-      })
-      .option('pattern', {
-        alias: 'p',
-        description: 'File substring patterns to match',
-        type: 'string'
-      })
-      .option('updateutime', {
-        alias: 'u',
-        description: 'Update the utime of the downloaded files',
-        type: 'boolean',
-        default: false
-      })
-      .option('nospaces', {
-        description: 'Replace filename spaces with underscores',
-        type: 'boolean',
-        default: false
-      })
-      .help()
-      .alias('help', 'h').argv;
-
+  .option("outputdir", {
+    alias: "o",
+    description: "Base output directory",
+    type: "string",
+    default: `${process.env.HOME}/Downloads/PodcastsExport`
+  })
+  .option("datesubdir", {
+    alias: "d",
+    description: "Add YYYY.MM.DD subdirectory to output dir",
+    type: "boolean",
+    default: true
+  })
+  .option("pattern", {
+    alias: "p",
+    description: "File substring patterns to match",
+    type: "string"
+  })
+  .option("updateutime", {
+    alias: "u",
+    description: "Update the utime of the downloaded files",
+    type: "boolean",
+    default: false
+  })
+  .option("nospaces", {
+    description: "Replace filename spaces with underscores",
+    type: "boolean",
+    default: false
+  })
+  .help()
+  .alias("help", "h").argv;
 
 // Added the Podcast name to the query
 // Looks like the date stored in the SQLite has an offset of +31 years, so we adjust the query
@@ -136,13 +134,12 @@ original error: ${e}`);
 }
 
 function handleSpaces(s) {
-  ret = s;
+  let ret = s;
   if (argv.nospaces) {
-    ret = s.replaceAll(' ', '_');
+    ret = s.replaceAll(" ", "_");
   }
   return ret;
 }
-
 
 async function mergeFilesWithDBMetaData(fileName, cacheFilesPath, podcastsDBData) {
   const uuid = fileName.replace(".mp3", "");
@@ -199,7 +196,7 @@ async function exportPodcasts(podcastsDBData, filepatterns = []) {
   // filename).  Since this causes some strange messages to appear
   // during export (i.e, the same podcast name is output several times),
   // delete the dups by keying on filename.
-  const uniqByFilename = Object.fromEntries(filteredPodcasts.map(p => [p.exportFileName, p]));
+  const uniqByFilename = Object.fromEntries(filteredPodcasts.map((p) => [p.exportFileName, p]));
   filteredPodcasts = Object.values(uniqByFilename);
 
   if (filepatterns.length > 0) {
@@ -207,18 +204,16 @@ async function exportPodcasts(podcastsDBData, filepatterns = []) {
   }
 
   function joinPath(parts) {
-    return parts.filter((s) => s).join('/');
+    return parts.filter((s) => s).join("/");
   }
 
   // Make all necessary directories.  Each podcast is in its own
   // subdir.
   const outputDir = getOutputDirPath();
-  const allDirs = filteredPodcasts.map(p => {
-    return joinPath([outputDir, p.podcastName]);
-  });
+  const allDirs = filteredPodcasts.map((p) => joinPath([outputDir, p.podcastName]));
   const uniqueDirs = Array.from(new Set(allDirs));
   // console.log(`Making ${uniqueDirs.length} directories ...`);
-  uniqueDirs.forEach(d => mkdirSync(d, { recursive: true }));
+  uniqueDirs.forEach((d) => mkdirSync(d, { recursive: true }));
   // console.log(`Done making ${uniqueDirs.length} directories.`);
 
   let skipped = 0;
@@ -232,8 +227,7 @@ async function exportPodcasts(podcastsDBData, filepatterns = []) {
       if (!existsSync(newPath)) {
         console.log(`${p.fileName} -> ${logDestFilePath}`);
         await exportSingle(p, newPath);
-      }
-      else {
+      } else {
         skipped += 1;
         console.log(`Already have ${logDestFilePath}, skipping`);
       }
@@ -255,10 +249,9 @@ async function main() {
   if (argv.pattern) {
     // User might specify one pattern, in which case argv.pattern is a
     // string, or multiple, in which case it's an array.
-    patterns = [ argv.pattern ].flat();
+    patterns = [argv.pattern].flat();
   }
   await exportPodcasts(dbPodcastData, patterns);
 }
-
 
 main();
