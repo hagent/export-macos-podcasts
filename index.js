@@ -199,7 +199,7 @@ async function exportPodcasts(podcastsDBData, filepatterns = []) {
   // filename).  Since this causes some strange messages to appear
   // during export (i.e, the same podcast name is output several times),
   // delete the dups by keying on filename.
-  const uniqByFilename = Object.fromEntries(filteredPodcasts.map(p => [p.exportFileName, p]))
+  const uniqByFilename = Object.fromEntries(filteredPodcasts.map(p => [p.exportFileName, p]));
   filteredPodcasts = Object.values(uniqByFilename);
 
   if (filepatterns.length > 0) {
@@ -234,7 +234,7 @@ async function exportPodcasts(podcastsDBData, filepatterns = []) {
         await exportSingle(p, newPath);
       }
       else {
-        skipped += 1
+        skipped += 1;
         console.log(`Already have ${logDestFilePath}, skipping`);
       }
     })
