@@ -1,4 +1,4 @@
-const { promises: fs, existsSync, mkdirSync } = require("fs");
+const fs = require("fs");
 const { promisify } = require("util");
 const sqlite3 = require("sqlite3").verbose();
 const mm = require("music-metadata");
@@ -24,10 +24,10 @@ function getOutputDirPath() {
   return `${process.env.HOME}/Downloads/PodcastsExport/${currentDateFolder}`;
 }
 
-async function getPodcastsBasePath() {
+function getPodcastsBasePath() {
   const groupContainersFolder = `${process.env.HOME}/Library/Group Containers`;
   try {
-    const libraryGroupContainersDirList = await fs.readdir(
+    const libraryGroupContainersDirList = fs.readdirSync(
       groupContainersFolder
     );
     const podcastsAppFolder = libraryGroupContainersDirList.find((d) => d.includes("groups.com.apple.podcasts"));
@@ -39,21 +39,21 @@ async function getPodcastsBasePath() {
     return `${process.env.HOME}/Library/Group Containers/${podcastsAppFolder}`;
   } catch (e) {
     throw new Error(
-      `Could not find podcasis app folder in ${groupContainersFolder}, original error: ${e}`
+      `Could not find podcasts app folder in ${groupContainersFolder}, original error: ${e}`
     );
   }
 }
 
-async function getPodcastsDBPath() {
-  return `${await getPodcastsBasePath()}/Documents/MTLibrary.sqlite`;
+function getPodcastsDBPath() {
+  return `${getPodcastsBasePath()}/Documents/MTLibrary.sqlite`;
 }
 
-async function getPodcastsCacheFilesPath() {
-  return `${await getPodcastsBasePath()}/Library/Cache`;
+function getPodcastsCacheFilesPath() {
+  return `${getPodcastsBasePath()}/Library/Cache`;
 }
 
 async function getDBPodcastsData() {
-  const dbOrigin = new sqlite3.Database(await getPodcastsDBPath());
+  const dbOrigin = new sqlite3.Database(getPodcastsDBPath());
   const db = {
     serialize: promisify(dbOrigin.serialize).bind(dbOrigin),
     all: promisify(dbOrigin.all).bind(dbOrigin),
@@ -86,9 +86,9 @@ async function getMP3MetaTitle(path) {
   return mp3Metadata?.common?.title;
 }
 
-async function getPodcastsCacheMP3Files(cacheFilesPath) {
+function getPodcastsCacheMP3Files(cacheFilesPath) {
   try {
-    const podcastFiles = await fs.readdir(cacheFilesPath);
+    const podcastFiles = fs.readdirSync(cacheFilesPath);
     return podcastFiles.filter((f) => f.includes(".mp3"));
   } catch (e) {
     throw new Error(`Could not find mp3 files in podcasts cache folder either there are no downloaded podcasts or something changed in podcasts app
@@ -144,32 +144,31 @@ async function exportPodcasts(podcastsDBData, filepatterns = []) {
   }
 
   const outputDir = getOutputDirPath();
-  await fs.mkdir(outputDir, { recursive: true });
-  await Promise.all(
-    filteredPodcasts.map(async (podcast) => {
-      // Create an export subdir
-      let exportDirPath = outputDir;
-      if (podcast.podcastName) {
-        exportDirPath = `${outputDir}/${podcast.podcastName}`;
-      }
-      // Needs to be sync else the same dir can be created multiple times
-      if (!existsSync(exportDirPath)) {
-        mkdirSync(exportDirPath);
-      }
+  fs.mkdirSync(outputDir, { recursive: true });
+  for (const podcast of filteredPodcasts) {
+    // Create an export subdir
+    let exportDirPath = outputDir;
+    if (podcast.podcastName) {
+      exportDirPath = `${outputDir}/${podcast.podcastName}`;
+    }
+    // Needs to be sync else the same dir can be created multiple times
+    if (!fs.existsSync(exportDirPath)) {
+      fs.mkdirSync(exportDirPath);
+    }
 
-      const newPath = `${exportDirPath}/${podcast.exportFileName}`;
-      await fs.copyFile(podcast.path, newPath);
+    const newPath = `${exportDirPath}/${podcast.exportFileName}`;
+    fs.copyFileSync(podcast.path, newPath);
 
-      const logDestFilePath = [podcast.podcastName, podcast.exportFileName]
-        .filter((s) => s)
-        .join("/");
-      console.log(`${podcast.fileName} -> ${logDestFilePath}`);
-      if (podcast.date) {
-        const d = new Date(podcast.date);
-        await fs.utimes(newPath, d, d);
-      }
-    })
-  );
+    const logDestFilePath = [podcast.podcastName, podcast.exportFileName]
+      .filter((s) => s)
+      .join("/");
+    console.log(`${podcast.fileName} -> ${logDestFilePath}`);
+    if (podcast.date) {
+      const d = new Date(podcast.date);
+      fs.utimesSync(newPath, d, d);
+    }
+  }
+
   console.log(`\n\nSuccessful Export to '${outputDir}' folder!`);
   exec(`open ${outputDir}`);
 }
