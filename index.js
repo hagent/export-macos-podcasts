@@ -1,9 +1,42 @@
-const { promises: fs, existsSync, mkdirSync } = require("fs");
+const { promises: fs, existsSync, mkdirSync, copyFileSync } = require("fs");
 const { promisify } = require("util");
 const sqlite3 = require("sqlite3").verbose();
 const mm = require("music-metadata");
 const { exec } = require("child_process");
 const sanitize = require("sanitize-filename");
+const yargs = require("yargs");
+
+const argv = yargs
+  .option("outputdir", {
+    alias: "o",
+    description: "Base output directory",
+    type: "string",
+    default: `${process.env.HOME}/Downloads/PodcastsExport`
+  })
+  .option("datesubdir", {
+    alias: "d",
+    description: "Add YYYY.MM.DD subdirectory to output dir",
+    type: "boolean",
+    default: true
+  })
+  .option("pattern", {
+    alias: "p",
+    description: "File substring patterns to match",
+    type: "string"
+  })
+  .option("updateutime", {
+    alias: "u",
+    description: "Update the utime of the downloaded files",
+    type: "boolean",
+    default: false
+  })
+  .option("nospaces", {
+    description: "Replace filename spaces with underscores",
+    type: "boolean",
+    default: false
+  })
+  .help()
+  .alias("help", "h").argv;
 
 // Added the Podcast name to the query
 // Looks like the date stored in the SQLite has an offset of +31 years, so we adjust the query
@@ -16,12 +49,16 @@ const podcastSelectSQL = `
 const fileNameMaxLength = 50;
 
 function getOutputDirPath() {
-  const d = new Date();
-  const pad = (s) => s.toString().padStart(2, "0");
-  const month = pad(d.getMonth() + 1);
-  const day = pad(d.getDate());
-  const currentDateFolder = `${d.getFullYear()}.${month}.${day}`;
-  return `${process.env.HOME}/Downloads/PodcastsExport/${currentDateFolder}`;
+  let ret = argv.outputdir;
+  if (argv.datesubdir) {
+    const d = new Date();
+    const pad = (s) => s.toString().padStart(2, "0");
+    const month = pad(d.getMonth() + 1);
+    const day = pad(d.getDate());
+    const currentDateFolder = `${d.getFullYear()}.${month}.${day}`;
+    ret = `${ret}/${currentDateFolder}`;
+  }
+  return ret;
 }
 
 async function getPodcastsBasePath() {
@@ -96,6 +133,14 @@ original error: ${e}`);
   }
 }
 
+function handleSpaces(s) {
+  let ret = s;
+  if (argv.nospaces) {
+    ret = s.replaceAll(" ", "_");
+  }
+  return ret;
+}
+
 async function mergeFilesWithDBMetaData(fileName, cacheFilesPath, podcastsDBData) {
   const uuid = fileName.replace(".mp3", "");
   const dbMeta = podcastsDBData.find((m) => m.zuuid === uuid);
@@ -105,15 +150,14 @@ async function mergeFilesWithDBMetaData(fileName, cacheFilesPath, podcastsDBData
         ?? uuid; // 3. fallback to unreadable uuid
   const podcastName = sanitize(dbMeta?.zpodcast);
   const exportFileName = sanitize(exportBase.substr(0, fileNameMaxLength));
-  const date = dbMeta?.date;
 
   return {
-    podcastName,
-    date,
+    podcastName: handleSpaces(podcastName),
+    date: dbMeta?.date,
     fileName,
     path,
     uuid,
-    exportFileName: `${exportFileName}.mp3`
+    exportFileName: handleSpaces(`${exportFileName}.mp3`)
   };
 }
 
@@ -131,6 +175,14 @@ function filterPodcasts(podcasts, filepatterns = []) {
   return podcasts.filter((p) => matchesAny(p.exportFileName) || matchesAny(p.podcastName));
 }
 
+async function exportSingle(podcast, newPath) {
+  copyFileSync(podcast.path, newPath);
+  if (podcast.date && argv.updateutime) {
+    const d = new Date(podcast.date);
+    await fs.utimes(newPath, d, d);
+  }
+}
+
 async function exportPodcasts(podcastsDBData, filepatterns = []) {
   const cacheFilesPath = await getPodcastsCacheFilesPath();
   const podcastMP3Files = await getPodcastsCacheMP3Files(cacheFilesPath);
@@ -138,46 +190,68 @@ async function exportPodcasts(podcastsDBData, filepatterns = []) {
     (fileName) => mergeFilesWithDBMetaData(fileName, cacheFilesPath, podcastsDBData)
   );
   const podcasts = await Promise.all(podcastPromises);
-  const filteredPodcasts = filterPodcasts(podcasts, filepatterns);
+  let filteredPodcasts = filterPodcasts(podcasts, filepatterns);
+
+  // Weirdly, there are some podcasts that are duplicates (same export
+  // filename).  Since this causes some strange messages to appear
+  // during export (i.e, the same podcast name is output several times),
+  // delete the dups by keying on filename.
+  const uniqByFilename = Object.fromEntries(filteredPodcasts.map((p) => [p.exportFileName, p]));
+  filteredPodcasts = Object.values(uniqByFilename);
+
   if (filepatterns.length > 0) {
     console.log(`Exporting ${filteredPodcasts.length} of ${podcasts.length}`);
   }
 
+  function joinPath(parts) {
+    return parts.filter((s) => s).join("/");
+  }
+
+  // Make all necessary directories.  Each podcast is in its own
+  // subdir.
   const outputDir = getOutputDirPath();
-  await fs.mkdir(outputDir, { recursive: true });
+  const allDirs = filteredPodcasts.map((p) => joinPath([outputDir, p.podcastName]));
+  const uniqueDirs = Array.from(new Set(allDirs));
+  // console.log(`Making ${uniqueDirs.length} directories ...`);
+  uniqueDirs.forEach((d) => mkdirSync(d, { recursive: true }));
+  // console.log(`Done making ${uniqueDirs.length} directories.`);
+
+  let skipped = 0;
+
+  // Actual file export.
   await Promise.all(
-    filteredPodcasts.map(async (podcast) => {
-      // Create an export subdir
-      let exportDirPath = outputDir;
-      if (podcast.podcastName) {
-        exportDirPath = `${outputDir}/${podcast.podcastName}`;
-      }
-      // Needs to be sync else the same dir can be created multiple times
-      if (!existsSync(exportDirPath)) {
-        mkdirSync(exportDirPath);
-      }
-
-      const newPath = `${exportDirPath}/${podcast.exportFileName}`;
-      await fs.copyFile(podcast.path, newPath);
-
-      const logDestFilePath = [podcast.podcastName, podcast.exportFileName]
-        .filter((s) => s)
-        .join("/");
-      console.log(`${podcast.fileName} -> ${logDestFilePath}`);
-      if (podcast.date) {
-        const d = new Date(podcast.date);
-        await fs.utimes(newPath, d, d);
+    filteredPodcasts.map(async (p) => {
+      const parts = [outputDir, p.podcastName, p.exportFileName];
+      const newPath = joinPath(parts);
+      const logDestFilePath = joinPath([p.podcastName, p.exportFileName]);
+      if (!existsSync(newPath)) {
+        console.log(`${p.fileName} -> ${logDestFilePath}`);
+        await exportSingle(p, newPath);
+      } else {
+        skipped += 1;
+        console.log(`Already have ${logDestFilePath}, skipping`);
       }
     })
   );
-  console.log(`\n\nSuccessful Export to '${outputDir}' folder!`);
+
+  console.log(`\n\nExported ${filteredPodcasts.length} podcasts to '${outputDir}'`);
+  if (skipped > 0) {
+    console.log(`(skipped ${skipped}, already present)`);
+  }
   exec(`open ${outputDir}`);
 }
 
-async function main(filepatterns = []) {
+async function main() {
   const dbPodcastData = await tryGetDBPodcastsData();
-  await exportPodcasts(dbPodcastData, filepatterns);
+
+  // Default: return all files.
+  let patterns = [];
+  if (argv.pattern) {
+    // User might specify one pattern, in which case argv.pattern is a
+    // string, or multiple, in which case it's an array.
+    patterns = [argv.pattern].flat();
+  }
+  await exportPodcasts(dbPodcastData, patterns);
 }
 
-const args = process.argv.slice(2);
-main(args);
+main();
