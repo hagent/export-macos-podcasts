@@ -128,7 +128,7 @@ async function getMP3MetaTitle(path) {
 async function getPodcastsCacheMP3Files(cacheFilesPath) {
   try {
     const podcastFiles = await fs.readdir(cacheFilesPath);
-    return podcastFiles.filter((f) => f.includes(".mp3"));
+    return podcastFiles.filter((f) => f.match(/\.mp3/i));
   } catch (e) {
     throw new Error(`Could not find mp3 files in podcasts cache folder either there are no downloaded podcasts or something changed in podcasts app
 original error: ${e}`);
@@ -144,7 +144,7 @@ function handleSpaces(s) {
 }
 
 async function mergeFilesWithDBMetaData(fileName, cacheFilesPath, podcastsDBData) {
-  const uuid = fileName.replace(".mp3", "");
+  const uuid = fileName.replace(/\.mp3/i, "");
   const dbMeta = podcastsDBData.find((m) => m.zuuid === uuid);
   const path = `${cacheFilesPath}/${fileName}`;
   const exportBase = dbMeta?.zcleanedtitle // 1. from apple podcast database
@@ -214,9 +214,7 @@ async function exportPodcasts(podcastsDBData, filepatterns = []) {
   const outputDir = getOutputDirPath();
   const allDirs = filteredPodcasts.map((p) => joinPath([outputDir, p.podcastName]));
   const uniqueDirs = Array.from(new Set(allDirs));
-  // console.log(`Making ${uniqueDirs.length} directories ...`);
   uniqueDirs.forEach((d) => mkdirSync(d, { recursive: true }));
-  // console.log(`Done making ${uniqueDirs.length} directories.`);
 
   let skipped = 0;
 
