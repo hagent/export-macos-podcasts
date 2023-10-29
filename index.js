@@ -1,6 +1,4 @@
-const {
-  promises: fs, existsSync, mkdirSync, copyFileSync
-} = require("fs");
+const { promises: fs, existsSync, mkdirSync, copyFileSync } = require("fs");
 const { promisify } = require("util");
 const sqlite3 = require("sqlite3").verbose();
 const mm = require("music-metadata");
@@ -69,7 +67,9 @@ async function getPodcastsBasePath() {
     const libraryGroupContainersDirList = await fs.readdir(
       groupContainersFolder
     );
-    const podcastsAppFolder = libraryGroupContainersDirList.find((d) => d.includes("groups.com.apple.podcasts"));
+    const podcastsAppFolder = libraryGroupContainersDirList.find((d) =>
+      d.includes("groups.com.apple.podcasts")
+    );
     if (!podcastsAppFolder) {
       throw new Error(
         `Could not find podcasts app folder in ${groupContainersFolder}`
@@ -143,13 +143,18 @@ function handleSpaces(s) {
   return ret;
 }
 
-async function mergeFilesWithDBMetaData(fileName, cacheFilesPath, podcastsDBData) {
+async function mergeFilesWithDBMetaData(
+  fileName,
+  cacheFilesPath,
+  podcastsDBData
+) {
   const uuid = fileName.replace(/\.mp3/i, "");
   const dbMeta = podcastsDBData.find((m) => m.zuuid === uuid);
   const path = `${cacheFilesPath}/${fileName}`;
-  const exportBase = dbMeta?.zcleanedtitle // 1. from apple podcast database
-        ?? (await getMP3MetaTitle(path)) // 2. from mp3 meta data
-        ?? uuid; // 3. fallback to unreadable uuid
+  const exportBase =
+    dbMeta?.zcleanedtitle ?? // 1. from apple podcast database
+    (await getMP3MetaTitle(path)) ?? // 2. from mp3 meta data
+    uuid; // 3. fallback to unreadable uuid
   const podcastName = sanitize(dbMeta?.zpodcast);
   const exportFileName = sanitize(exportBase.substr(0, fileNameMaxLength));
 
@@ -174,7 +179,9 @@ function filterPodcasts(podcasts, filepatterns = []) {
       .some((pattern) => fileOrDir.toLowerCase().includes(pattern));
   }
 
-  return podcasts.filter((p) => matchesAny(p.exportFileName) || matchesAny(p.podcastName));
+  return podcasts.filter(
+    (p) => matchesAny(p.exportFileName) || matchesAny(p.podcastName)
+  );
 }
 
 async function exportSingle(podcast, newPath) {
@@ -188,8 +195,8 @@ async function exportSingle(podcast, newPath) {
 async function exportPodcasts(podcastsDBData, filepatterns = []) {
   const cacheFilesPath = await getPodcastsCacheFilesPath();
   const podcastMP3Files = await getPodcastsCacheMP3Files(cacheFilesPath);
-  const podcastPromises = podcastMP3Files.map(
-    (fileName) => mergeFilesWithDBMetaData(fileName, cacheFilesPath, podcastsDBData)
+  const podcastPromises = podcastMP3Files.map((fileName) =>
+    mergeFilesWithDBMetaData(fileName, cacheFilesPath, podcastsDBData)
   );
   const podcasts = await Promise.all(podcastPromises);
   let filteredPodcasts = filterPodcasts(podcasts, filepatterns);
@@ -198,7 +205,9 @@ async function exportPodcasts(podcastsDBData, filepatterns = []) {
   // filename).  Since this causes some strange messages to appear
   // during export (i.e, the same podcast name is output several times),
   // delete the dups by keying on filename.
-  const uniqByFilename = Object.fromEntries(filteredPodcasts.map((p) => [p.exportFileName, p]));
+  const uniqByFilename = Object.fromEntries(
+    filteredPodcasts.map((p) => [p.exportFileName, p])
+  );
   filteredPodcasts = Object.values(uniqByFilename);
 
   if (filepatterns.length > 0) {
@@ -212,7 +221,9 @@ async function exportPodcasts(podcastsDBData, filepatterns = []) {
   // Make all necessary directories.  Each podcast is in its own
   // subdir.
   const outputDir = getOutputDirPath();
-  const allDirs = filteredPodcasts.map((p) => joinPath([outputDir, p.podcastName]));
+  const allDirs = filteredPodcasts.map((p) =>
+    joinPath([outputDir, p.podcastName])
+  );
   const uniqueDirs = Array.from(new Set(allDirs));
   uniqueDirs.forEach((d) => mkdirSync(d, { recursive: true }));
 
@@ -234,7 +245,9 @@ async function exportPodcasts(podcastsDBData, filepatterns = []) {
     })
   );
 
-  console.log(`\n\nExported ${filteredPodcasts.length} podcasts to '${outputDir}'`);
+  console.log(
+    `\n\nExported ${filteredPodcasts.length} podcasts to '${outputDir}'`
+  );
   if (skipped > 0) {
     console.log(`(skipped ${skipped}, already present)`);
   }
